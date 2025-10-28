@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Build and Deploy Backend
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  CONTAINER_NAME: backend
 
 jobs:
   build-and-push:
@@ -15,19 +16,20 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to GHCR
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Build & push
+      - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -37,14 +39,21 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
   deploy:
+    name: Deploy to self-hosted server
     needs: build-and-push
     runs-on: [self-hosted, polaris]
     steps:
-      - name: Pull image
+      - name: Login to GHCR
+        run: echo $GHCR_TOKEN | docker login ghcr.io -u abdulkadirerdem --password-stdin
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Pull latest image
         run: docker pull ghcr.io/${{ github.repository }}:latest
-      - name: Up compose
+
+      - name: Restart backend container
         working-directory: /opt/apps/backend
         run: docker compose up -d
-      - name: Prune old images (optional)
-        run: docker image prune -f
 
+      - name: Cleanup old images
+        run: docker image prune -af
