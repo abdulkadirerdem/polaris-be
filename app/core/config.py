@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     SUPABASE_ANON_KEY: str
     SUPABASE_JWKS_URL: str
     SUPABASE_JWT_AUD: str = "authenticated"
+    SUPABASE_JWT_SECRET: str = None  # For HS256 tokens
     DATABASE_URL: str
 
     model_config = {"env_file": ".env", "extra": "ignore"}
