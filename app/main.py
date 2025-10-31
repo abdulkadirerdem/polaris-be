@@ -1,15 +1,12 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
+from app.core.config import settings
+from app.api.v1.forecasts.router import router as forecasts_router
 
-app = FastAPI(title="FastAPI Starter", version="0.1.0")
-
-class Ping(BaseModel):
-    message: str = "pong"
+app = FastAPI(title="Polaris Finance API", version="0.1.0")
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
-@app.get("/ping", response_model=Ping)
-def ping():
-    return Ping()
+# v1 routes
+app.include_router(forecasts_router, prefix="/api/v1/forecasts", tags=["forecasts"])
